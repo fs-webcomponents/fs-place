@@ -13,7 +13,7 @@
     </style>
     <div id="place" hidden$="[[edit]]">{{_displayPlace(place)}}</div>
     <template is="dom-if" if="[[edit]]">
-      <fs-request id="request" url="{{_computeUrl(original)}}" on-response="_handleResponse"></fs-request>
+      <fs-request id="request" url="{{_computeUrl(place.original)}}" on-response="_handleResponse"></fs-request>
       <paper-autocomplete 
         id="autocomplete" 
         label="place" 
@@ -75,19 +75,22 @@
         });
       }
       
-      _computeUrl() {
-        if(this.original) {
-          return `/platform/places/search?q=name:"${this.original}"`;
+      _computeUrl(original) {
+        if(original) {
+          return `/platform/places/search?q=name:"${original}"`;
         }
       }
       
       _autocompleteChange(e) {
         if(e.detail && e.detail.text) {
-          this.original = e.detail.text;
+          if(!this.place) {
+            this.place = {};
+          }
+          this.set('place.original', e.detail.text);
+          this._debouncer = Polymer.Debouncer.debounce(this._debouncer, Polymer.Async.timeOut.after(300), () => { 
+            this.shadowRoot.querySelector('#request').generateRequest(); 
+          });
         }
-        this._debouncer = Polymer.Debouncer.debounce(this._debouncer, Polymer.Async.timeOut.after(300), () => { 
-          this.shadowRoot.querySelector('#request').generateRequest(); 
-        });
       }
       
       _autocompleteSelected(e) {
