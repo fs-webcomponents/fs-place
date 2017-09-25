@@ -1,0 +1,117 @@
+<link rel="import" href="../polymer/polymer-element.html">
+<link rel="import" href="../polymer/lib/elements/dom-if.html">
+<link rel="import" href="../polymer/lib/utils/debounce.html">
+<link rel="import" href="../paper-autocomplete/paper-autocomplete.html">
+<link rel="import" href="../fs-request/fs-request.html">
+
+<dom-module id="fs-place">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+    </style>
+    <div id="place" hidden$="[[edit]]">{{_displayPlace(place)}}</div>
+    <template is="dom-if" if="[[edit]]">
+      <fs-request id="request" url="{{_computeUrl(original)}}" on-response="_handleResponse"></fs-request>
+      <paper-autocomplete 
+        id="autocomplete" 
+        label="place" 
+        no-label-float 
+        remote-source
+        on-autocomplete-change="_autocompleteChange"
+        on-autocomplete-selected="_autocompleteSelected"></paper-autocomplete>
+    </template>
+  </template>
+
+  <script>
+    /**
+     * `fs-place`
+     *
+     * @customElement
+     * @polymer
+     * @demo demo/index.html
+     */
+    class FsPlace extends Polymer.Element {
+      
+      static get is() { return 'fs-place'; }
+      
+      static get properties() {
+        return {
+          place: {
+            type: Object,
+            notify: true
+          },
+          
+          /* Toggle edit mode */
+          edit: {
+            type: Boolean,
+            value: false,
+            observer: '_setupEdit'
+          },
+          
+          _debouncer: Object
+        };
+      }
+      
+      _displayPlace(place) {
+        if(!place) {
+          return '';
+        }
+        return place.original || (place.normalized && place.normalized[0] ? place.normalized[0].value : '');
+      }
+      
+      _setupEdit(edit) {
+        // Have to defer this execution to give time for Polymer to stamp the
+        // DOM since it's in a dom-if helper template
+        Polymer.Async.microTask.run(() => {
+          if(edit) {
+            this.shadowRoot.querySelector('#request').headers = {
+              Accept: 'application/x-gedcomx-atom+json'
+            };
+            this.shadowRoot.querySelector('#autocomplete').text = this._displayPlace(this.place);
+            this.shadowRoot.querySelector('#autocomplete').value = JSON.stringify(this.place);
+          }
+        });
+      }
+      
+      _computeUrl() {
+        if(this.original) {
+          return `/platform/places/search?q=name:"${this.original}"`;
+        }
+      }
+      
+      _autocompleteChange(e) {
+        if(e.detail && e.detail.text) {
+          this.original = e.detail.text;
+        }
+        this._debouncer = Polymer.Debouncer.debounce(this._debouncer, Polymer.Async.timeOut.after(300), () => { 
+          this.shadowRoot.querySelector('#request').generateRequest(); 
+        });
+      }
+      
+      _autocompleteSelected(e) {
+        this.place = JSON.parse(e.detail.value);
+      }
+      
+      _handleResponse(e) {
+        const response = e.detail.response;
+        if(response.statusCode === 200) {
+          const suggestions = response.data.entries.map((entry) => {
+            const place = entry.content.gedcomx.places[0];
+            return {
+              text: place.display.fullName,
+              value: JSON.stringify({
+                original: place.display.fullName,
+                normalized: place.names
+              })
+            };
+          });
+          this.shadowRoot.querySelector('#autocomplete').suggestions(suggestions);
+        }
+      }
+    }
+
+    window.customElements.define(FsPlace.is, FsPlace);
+  </script>
+</dom-module>
