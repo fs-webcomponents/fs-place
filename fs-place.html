@@ -13,7 +13,11 @@
     </style>
     <div id="place" hidden$="[[edit]]">{{_displayPlace(place)}}</div>
     <template is="dom-if" if="[[edit]]">
-      <fs-request id="request" url="{{_computeUrl(place.original)}}" on-response="_handleResponse"></fs-request>
+      <fs-request 
+        id="request" 
+        url="{{_computeUrl(place.original)}}"
+        headers='{"Accept":"application/x-gedcomx-atom+json"}'
+        on-response="_handleResponse"></fs-request>
       <paper-autocomplete 
         id="autocomplete" 
         label="place" 
@@ -64,15 +68,12 @@
       _setupEdit(edit) {
         // Have to defer this execution to give time for Polymer to stamp the
         // DOM since it's in a dom-if helper template
-        Polymer.Async.microTask.run(() => {
-          if(edit) {
-            this.shadowRoot.querySelector('#request').headers = {
-              Accept: 'application/x-gedcomx-atom+json'
-            };
+        if(edit) {
+          setTimeout(() => {
             this.shadowRoot.querySelector('#autocomplete').text = this._displayPlace(this.place);
             this.shadowRoot.querySelector('#autocomplete').value = JSON.stringify(this.place);
-          }
-        });
+          });
+        }
       }
       
       _computeUrl(original) {
