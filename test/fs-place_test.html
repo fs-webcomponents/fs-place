@@ -13,36 +13,82 @@
   </head>
   <body>
 
-    <test-fixture id="BasicTestFixture">
+    <test-fixture id="empty">
       <template>
         <fs-place></fs-place>
       </template>
     </test-fixture>
 
-    <test-fixture id="ChangedPropertyTestFixture">
+    <test-fixture id="display-place">
       <template>
-        <fs-place prop1="new-prop1"></fs-place>
+        <fs-place></fs-place>
+      </template>
+    </test-fixture>
+
+    <test-fixture id="empty-edit">
+      <template>
+        <fs-place edit></fs-place>
+      </template>
+    </test-fixture>
+
+    <test-fixture id="edit-prefilled">
+      <template>
+        <fs-place edit></fs-place>
+      </template>
+    </test-fixture>
+
+    <test-fixture id="clear">
+      <template>
+        <fs-place edit place='{"original":"Nova Scotia"}'></fs-place>
       </template>
     </test-fixture>
 
     <script>
       suite('fs-place', function() {
 
-        test('instantiating the element with default properties works', function() {
-          var element = fixture('BasicTestFixture');
-          assert.equal(element.prop1, 'fs-place');
-          var elementShadowRoot = element.shadowRoot;
-          var elementHeader = elementShadowRoot.querySelector('h2');
-          assert.equal(elementHeader.innerHTML, 'Hello fs-place!');
+        test('empty', function() {
+          var element = fixture('empty');
+          assert.equal(element.shadowRoot.querySelector('#place').textContent.trim(), '');
         });
-
-        test('setting a property on the element works', function() {
-          // Create a test fixture
-          var element = fixture('ChangedPropertyTestFixture');
-          assert.equal(element.prop1, 'new-prop1');
-          var elementShadowRoot = element.shadowRoot;
-          var elementHeader = elementShadowRoot.querySelector('h2');
-          assert.equal(elementHeader.innerHTML, 'Hello new-prop1!');
+        
+        test('display place', function() {
+          var element = fixture('display-place');
+          element.place = {
+            original: 'Nova Scotia'
+          };
+          assert.equal(element.shadowRoot.querySelector('#place').textContent, 'Nova Scotia');
+        });
+        
+        test('empty edit', function(done) {
+          var element = fixture('empty-edit');
+          setTimeout(() => {
+            assert(!!element.shadowRoot.querySelector('#autocomplete'));
+            assert(element.place === undefined);
+            done();
+          });
+        });
+        
+        test('edit prefilled', function(done) {
+          var element = fixture('empty-edit');
+          element.place = {
+            original: 'Nova Scotia'
+          };
+          assert.equal(element.shadowRoot.querySelector('#place').textContent, 'Nova Scotia');
+          setTimeout(() => {
+            assert(!!element.shadowRoot.querySelector('#autocomplete'));
+            assert(!!element.place);
+            done();
+          });
+        });
+        
+        test('clear', function(done){
+          var element = fixture('clear');
+          assert.equal(element.place.original, "Nova Scotia");
+          setTimeout(function(){
+            element.shadowRoot.querySelector('#autocomplete').clear();
+            assert.equal(element.place, undefined);
+            done();
+          });
         });
 
       });
