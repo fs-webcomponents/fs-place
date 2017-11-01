@@ -99,13 +99,13 @@
         }
       }
       
-      _autocompleteTextChanged(e) {
+      _autocompleteTextChanged() {
         const text = this.shadowRoot.querySelector('#autocomplete').text;
         if(text) {
           if(!this.place) {
             this.place = {};
           }
-          this.set('place.original', e.detail.text);
+          this.set('place.original', text);
           this._debouncer = Polymer.Debouncer.debounce(this._debouncer, Polymer.Async.timeOut.after(300), () => { 
             this.shadowRoot.querySelector('#request').generateRequest(); 
           });
